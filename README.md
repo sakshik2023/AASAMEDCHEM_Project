@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AasaMedChem Inventory & Quotation Hub
 
-## Getting Started
+This project is a hackathon-ready Next.js inventory and quotation management app with a role-based workflow for sellers and admins. The current UI demonstrates the key flows expected in the assignment: product search, unit conversion, INR pricing, and quotation creation.
 
-First, run the development server:
+## Features
+- Search and filter inventory products.
+- Convert user-entered quantities into internal storage units for price calculation.
+- Show INR pricing in the UI.
+- Admin view to add and remove products.
+- Seller/User view to place quotations.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Tech stack
+- Next.js App Router + React + TypeScript
+- Tailwind CSS for layout and styling
+- Neon PostgreSQL schema documented in `schema.sql`
+- Vercel-ready deployment target
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## High-level system design
+1. The Next.js frontend renders inventory cards, a quotation builder, and role-specific admin controls.
+2. The quotation logic converts entered quantities into internal storage units before calculating totals.
+3. The `schema.sql` file defines the PostgreSQL tables intended for Neon, which can be connected through `DATABASE_URL` in production.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database schema
+- `products`: id, name, category, base_unit, base_price_per_unit, stock_quantity, description
+- `quotations`: id, customer_name, status, total_amount
+- `quotation_items`: id, quotation_id, product_id, quantity, unit, line_total
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Unit storage & conversion strategy
+- Weight inventory is stored internally in grams (`g`).
+- Volume inventory is stored internally in milliliters (`mL`).
+- Count inventory is stored as items (`unit`).
+- Price is stored as `NUMERIC(18, 6)` to preserve high precision and support large values.
+- Quantity is stored as `NUMERIC(18, 6)` in the database schema.
+- Conversion rules used in the app:
+  - `1 kg = 1000 g`
+  - `1 L = 1000 mL`
+  - count units remain in items
+- The conversion is applied in the UI before the quotation total is calculated.
 
-## Learn More
+## Local setup
+1. Copy `.env.example` to `.env.local` and set `DATABASE_URL` to your Neon connection string.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+4. Open http://localhost:3000
 
-To learn more about Next.js, take a look at the following resources:
+## Neon / PostgreSQL notes
+- The app is ready to connect to Neon via `DATABASE_URL`.
+- Apply the schema with:
+  ```bash
+  psql "$DATABASE_URL" -f schema.sql
+  ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment on Vercel
+1. Push this repository to GitHub.
+2. Import the repo in Vercel.
+3. Add the `DATABASE_URL` environment variable in Vercel Project Settings.
+4. Deploy the project.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## How to use the app
+- Seller/User role: search products, add line items, choose a quantity unit, and place a quotation.
+- Admin role: use the admin panel to add or remove products and inspect the same quotation totals.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Test credentials
+- Seller/User: use the built-in role selector in the header.
+- Admin: switch the role selector to Admin.
