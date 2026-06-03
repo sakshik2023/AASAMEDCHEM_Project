@@ -26,9 +26,10 @@ This project is a hackathon-ready Next.js inventory and quotation management app
 - `quotation_items`: id, quotation_id, product_id, quantity, unit, line_total
 
 ## Unit storage & conversion strategy
-- Weight inventory is stored internally in grams (`g`).
-- Volume inventory is stored internally in milliliters (`mL`).
-- Count inventory is stored as items (`unit`).
+- Supported display and order units: `g`, `kg`, `L`, `mL`, and `unit` (count/items).
+- Internal storage for weight-based products uses grams (`g`).
+- Internal storage for volume-based products uses milliliters (`mL`).
+- Internal storage for count-based products uses items (`unit`).
 - Price is stored as `NUMERIC(18, 6)` to preserve high precision and support large values.
 - Quantity is stored as `NUMERIC(18, 6)` in the database schema.
 - Conversion rules used in the app:
