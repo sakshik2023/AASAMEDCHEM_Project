@@ -9,7 +9,7 @@ type Product = {
   id: number;
   name: string;
   category: string;
-  baseUnit: "g" | "mL" | "unit";
+  baseUnit: "g" | "kg" | "L" | "mL" | "unit";
   basePricePerUnit: number;
   stockQuantity: number;
   description: string;
@@ -33,6 +33,15 @@ const INITIAL_PRODUCTS: Product[] = [
   },
   {
     id: 2,
+    name: "Bulk Reagent",
+    category: "Chemicals",
+    baseUnit: "kg",
+    basePricePerUnit: 24.5,
+    stockQuantity: 60,
+    description: "High-volume bulk chemistry stored internally in kilograms.",
+  },
+  {
+    id: 3,
     name: "Sterile Solvent",
     category: "Lab",
     baseUnit: "mL",
@@ -41,7 +50,16 @@ const INITIAL_PRODUCTS: Product[] = [
     description: "Volume-based inventory stored internally in milliliters.",
   },
   {
-    id: 3,
+    id: 4,
+    name: "Dilution Buffer",
+    category: "Buffer",
+    baseUnit: "L",
+    basePricePerUnit: 3.2,
+    stockQuantity: 240,
+    description: "Large-volume solution stored internally in liters.",
+  },
+  {
+    id: 5,
     name: "Sample Vials",
     category: "Packaging",
     baseUnit: "unit",
@@ -52,13 +70,28 @@ const INITIAL_PRODUCTS: Product[] = [
 ];
 
 function convertToBase(quantity: number, fromUnit: Unit, baseUnit: Product["baseUnit"]): number {
-  if (baseUnit === "g") {
-    return fromUnit === "kg" ? quantity * 1000 : quantity;
+  const weightScale: Record<Unit, number> = { g: 1, kg: 1000, L: 0, "mL": 0, unit: 0 };
+  const volumeScale: Record<Unit, number> = { g: 0, kg: 0, L: 1000, "mL": 1, unit: 0 };
+
+  if (baseUnit === "g" || baseUnit === "kg") {
+    const fromGrams = fromUnit === "kg" ? quantity * 1000 : fromUnit === "g" ? quantity : 0;
+    const toGrams = baseUnit === "kg" ? 1000 : 1;
+    return fromGrams / toGrams;
   }
-  if (baseUnit === "mL") {
-    return fromUnit === "L" ? quantity * 1000 : quantity;
+
+  if (baseUnit === "L" || baseUnit === "mL") {
+    const fromMilliliters = fromUnit === "L" ? quantity * 1000 : fromUnit === "mL" ? quantity : 0;
+    const toMilliliters = baseUnit === "L" ? 1000 : 1;
+    return fromMilliliters / toMilliliters;
   }
+
   return quantity;
+}
+
+function getSupportedUnits(baseUnit: Product["baseUnit"]): Unit[] {
+  if (baseUnit === "g" || baseUnit === "kg") return ["g", "kg"];
+  if (baseUnit === "L" || baseUnit === "mL") return ["L", "mL"];
+  return ["unit"];
 }
 
 function formatInr(value: number) {
@@ -95,7 +128,8 @@ export default function Home() {
     setSelected((prev) => {
       const existing = prev.find((item) => item.productId === product.id);
       if (existing) return prev;
-      return [...prev, { productId: product.id, quantity: 1, unit: product.baseUnit === "g" ? "g" : product.baseUnit === "mL" ? "mL" : "unit" }];
+      const defaultUnit = getSupportedUnits(product.baseUnit)[0];
+      return [...prev, { productId: product.id, quantity: 1, unit: defaultUnit }];
     });
   };
 
@@ -205,6 +239,8 @@ export default function Home() {
                   <input value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} placeholder="Category" className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100" />
                   <select value={draft.baseUnit} onChange={(e) => setDraft({ ...draft, baseUnit: e.target.value as Product["baseUnit"] })} className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100">
                     <option value="g">g</option>
+                    <option value="kg">kg</option>
+                    <option value="L">L</option>
                     <option value="mL">mL</option>
                     <option value="unit">unit</option>
                   </select>
@@ -253,9 +289,9 @@ export default function Home() {
                       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
                         <input type="number" min="0" value={item.quantity} onChange={(e) => updateItemQuantity(item.productId, Number(e.target.value))} className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-2 text-slate-100" />
                         <select value={item.unit} onChange={(e) => setSelected((prev) => prev.map((entry) => entry.productId === item.productId ? { ...entry, unit: e.target.value as Unit } : entry))} className="rounded-2xl border border-slate-700 bg-slate-950 px-4 py-2 text-slate-100">
-                          {product.baseUnit === "g" && <><option value="g">g</option><option value="kg">kg</option></>}
-                          {product.baseUnit === "mL" && <><option value="mL">mL</option><option value="L">L</option></>}
-                          {product.baseUnit === "unit" && <option value="unit">unit</option>}
+                          {getSupportedUnits(product.baseUnit).map((unit) => (
+                            <option key={`${product.id}-${unit}`} value={unit}>{unit}</option>
+                          ))}
                         </select>
                         <span className="rounded-2xl bg-slate-800 px-4 py-2 text-sm text-slate-100">{baseQuantity.toFixed(2)} {product.baseUnit}</span>
                       </div>
